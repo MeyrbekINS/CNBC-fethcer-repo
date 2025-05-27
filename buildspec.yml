@@ -32,7 +32,7 @@ phases:
       # This creates an imagedefinitions.json file that can be used by AWS CodePipeline to update an ECS service.
       # Replace 'YOUR_CONTAINER_NAME_IN_ECS_TASK_DEF' with the name you will use for the container in your ECS Task Definition (e.g., cnbc-fetcher-container)
       - echo Writing image definitions file...
-      - printf '[{"name":"YOUR_CONTAINER_NAME_IN_ECS_TASK_DEF","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"cnbc-fetcher-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files:
