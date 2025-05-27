@@ -7,10 +7,10 @@ phases:
       - echo Logging in to Amazon ECR...
       # Replace YOUR_ACCOUNT_ID and YOUR_AWS_REGION with your actual AWS Account ID and Region (e.g., eu-north-1)
       # This command retrieves an authentication token and uses it to log Docker into your ECR registry.
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin 305362906248.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       # Define your ECR repository URI and image tag
       # Replace YOUR_ECR_REPOSITORY_NAME with the name of your ECR repository (e.g., cnbc-fetcher or sofr-scraper if you are reusing)
-      - REPOSITORY_URI=YOUR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/YOUR_ECR_REPOSITORY_NAME
+      - REPOSITORY_URI=305362906248.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cnbc-fetcher
       - IMAGE_TAG=latest # You can use other tags like $CODEBUILD_RESOLVED_SOURCE_VERSION for commit-specific tags
 
   build:
