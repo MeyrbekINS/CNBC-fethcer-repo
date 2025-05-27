@@ -1,0 +1,42 @@
+# --- START OF FILE buildspec.yml ---
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      # Replace YOUR_ACCOUNT_ID and YOUR_AWS_REGION with your actual AWS Account ID and Region (e.g., eu-north-1)
+      # This command retrieves an authentication token and uses it to log Docker into your ECR registry.
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin YOUR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      # Define your ECR repository URI and image tag
+      # Replace YOUR_ECR_REPOSITORY_NAME with the name of your ECR repository (e.g., cnbc-fetcher or sofr-scraper if you are reusing)
+      - REPOSITORY_URI=YOUR_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/YOUR_ECR_REPOSITORY_NAME
+      - IMAGE_TAG=latest # You can use other tags like $CODEBUILD_RESOLVED_SOURCE_VERSION for commit-specific tags
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      # This command builds the Docker image using the Dockerfile in your repository's root.
+      # It tags the image with the REPOSITORY_URI and IMAGE_TAG defined in the pre_build phase.
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image to Amazon ECR...
+      # This command pushes the built and tagged Docker image to your ECR repository.
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Docker image pushed successfully.
+      # (Optional but recommended for ECS integration)
+      # This creates an imagedefinitions.json file that can be used by AWS CodePipeline to update an ECS service.
+      # Replace 'YOUR_CONTAINER_NAME_IN_ECS_TASK_DEF' with the name you will use for the container in your ECS Task Definition (e.g., cnbc-fetcher-container)
+      - echo Writing image definitions file...
+      - printf '[{"name":"YOUR_CONTAINER_NAME_IN_ECS_TASK_DEF","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    # This tells CodeBuild to include the imagedefinitions.json file as an artifact of the build.
+    # This is useful if you plan to use AWS CodePipeline for continuous deployment to ECS.
+    - imagedefinitions.json
+# --- END OF FILE buildspec.yml ---
