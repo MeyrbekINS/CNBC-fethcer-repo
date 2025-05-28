@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import json
 import boto3
 import decimal
+import math
 import os
 import time # For potential retries or waits
 
@@ -55,14 +56,26 @@ def store_data_in_dynamodb(df, metric_id_to_store, unit):
                 datetime_obj = datetime_obj.replace(tzinfo=timezone.utc)
             db_timestamp = int(datetime_obj.timestamp() * 1000)
 
+            current_value = row['Value']
+
+            if pd.isna(current_value):
+                print(f"Skipping row due to NaN value for {metric_id_to_store} at {datetime_obj}")
+                continue
+                
             try:
-                # Ensure the value is not NaN or Inf, which Decimal cannot handle
-                if pd.isna(row['Value']) or not pd.Series(row['Value']).is_finite().all():
-                    print(f"Skipping row due to non-finite value: {row['Value']} for {metric_id_to_store} at {datetime_obj}")
+                if not isinstance(current_value, (int, float, decimal.Decimal)): # Check if it's already a number
+                    # If it could be a string representation of a number from the DataFrame
+                    temp_value = float(current_value)
+                else:
+                    temp_value = current_value
+                
+                if not math.isfinite(temp_value):
+                    print(f"Skipping row due to non-finite value (Infinity or -Infinity): {temp_value} for {metric_id_to_store} at {datetime_obj}")
                     continue
-                value = decimal.Decimal(str(row['Value']))
+
+                value_for_db = decimal.Decimal(str(current_value)) 
             except (ValueError, TypeError, decimal.InvalidOperation) as e:
-                print(f"Could not convert value '{row['Value']}' to Decimal for {metric_id_to_store} at {datetime_obj}. Error: {e}")
+                print(f"Could not convert value '{current_value}' to Decimal or it was non-finite for {metric_id_to_store} at {datetime_obj}. Error: {e}")
                 continue
 
             source_date_str = datetime_obj.strftime('%Y-%m-%d %H:%M:%S %Z') # Include timezone
@@ -70,7 +83,7 @@ def store_data_in_dynamodb(df, metric_id_to_store, unit):
             item = {
                 'metricId': metric_id_to_store,
                 'timestamp': db_timestamp, # Primary Sort Key
-                'value': value,
+                'value': value_for_db,
                 'sourceDate': source_date_str,
                 'unit': unit
             }
